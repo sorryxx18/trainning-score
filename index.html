@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>114年體能測驗換算系統 (Excel 專用版)</title>
+    <title>114年體能測驗精確換算系統</title>
+    <!-- 引入外部資源 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -12,9 +13,9 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; overflow: hidden; }
-        .table-wrapper { height: calc(100vh - 240px); overflow: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .table-wrapper { width: 100%; height: calc(100vh - 250px); overflow: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
         th { background: #1e293b; color: white; position: sticky; top: 0; z-index: 10; font-size: 13px; padding: 12px 8px; white-space: nowrap; }
-        td { border-bottom: 1px solid #f1f5f9; padding: 8px; text-align: center; font-size: 13px; white-space: nowrap; }
+        td { border-bottom: 1px solid #f1f5f9; padding: 10px 8px; text-align: center; font-size: 13px; white-space: nowrap; }
         .tab-btn.active { border-bottom: 4px solid #2563eb; color: #2563eb; font-weight: bold; background: #eff6ff; }
         .spinner { border: 4px solid rgba(0,0,0,0.1); border-top-color: #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -22,79 +23,79 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="h-screen flex">
+<body class="h-screen flex overflow-hidden">
 
-    <!-- Loading 遮罩 (改善轉圈圈不動的問題) -->
-    <div id="loading" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] hidden flex-col justify-center items-center">
+    <!-- 全螢幕遮罩 -->
+    <div id="loading" class="fixed inset-0 bg-white/90 backdrop-blur-md z-[9999] hidden flex-col justify-center items-center">
         <div class="spinner mb-4"></div>
         <div class="font-bold text-blue-600 text-lg" id="loadingText">處理中...</div>
+        <p class="text-xs text-slate-400 mt-2">大型 Excel 處理中，請稍候</p>
     </div>
 
-    <!-- 左側導覽列 -->
-    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 shadow-2xl">
+    <!-- 左側側欄 -->
+    <aside class="w-64 bg-slate-900 text-white flex flex-col shrink-0 shadow-2xl">
         <div class="p-6 border-b border-slate-800 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg"><i class="ri-fire-line text-2xl"></i></div>
-            <div><h1 class="font-bold text-white text-sm">體能換算系統</h1><p class="text-[10px] text-slate-500 uppercase tracking-widest">Excel 1,600人專用</p></div>
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg"><i class="ri-fire-fill text-2xl"></i></div>
+            <span class="font-bold text-lg">體能換算系統</span>
         </div>
         <nav class="p-4 space-y-2 flex-1">
-            <div class="bg-blue-600 text-white px-4 py-3 rounded-xl flex items-center gap-3 cursor-default shadow-lg shadow-blue-900/20"><i class="ri-dashboard-3-line"></i> 測驗管理中心</div>
+            <div class="bg-blue-600 p-3 rounded-xl flex items-center gap-3 cursor-pointer shadow-lg border border-blue-400/20">
+                <i class="ri-dashboard-3-line text-xl"></i>
+                <span class="font-bold">數據管理中心</span>
+            </div>
         </nav>
     </aside>
 
-    <!-- 主內容區 -->
     <main class="flex-1 flex flex-col min-w-0">
-        <!-- 頂部按鈕區 (並列配置) -->
+        <!-- 頂部功能區 (Excel 範例與匯入) -->
         <header class="bg-white border-b border-slate-200 p-4 px-8 flex items-center justify-between shrink-0 shadow-sm">
             <div class="flex items-center gap-4">
-                <!-- 1. 下載範例 -->
+                <!-- 1. 下載填報範例 (Excel) -->
                 <div class="relative group">
-                    <button class="bg-slate-100 text-slate-700 px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-slate-200 transition border border-slate-300">
-                        <i class="ri-file-download-line text-lg text-slate-500"></i> 1. 下載填報範例 (Excel)
+                    <button class="bg-slate-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-black transition">
+                        <i class="ri-file-download-line text-lg"></i> 1. 下載範例 (Excel)
                     </button>
                     <div class="absolute left-0 top-full pt-2 w-48 hidden group-hover:block z-50">
                         <div class="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden p-1">
-                            <div onclick="exportTemplateExcel('第一大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1">第一大隊範例</div>
-                            <div onclick="exportTemplateExcel('第二大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1">第二大隊範例</div>
-                            <div onclick="exportTemplateExcel('第三大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1">第三大隊範例</div>
-                            <div onclick="exportTemplateExcel('第四大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded">第四大隊範例</div>
+                            <div onclick="exportBatchTemplateExcel('第一大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1">第一大隊範例</div>
+                            <div onclick="exportBatchTemplateExcel('第二大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1">第二大隊範例</div>
+                            <div onclick="exportBatchTemplateExcel('第三大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1">第三大隊範例</div>
+                            <div onclick="exportBatchTemplateExcel('第四大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded">第四大隊範例</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 2. 匯入換算 -->
+                <!-- 2. 匯入換算成績 -->
                 <button onclick="$('#excelInput').click()" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 active:scale-95 transition">
-                    <i class="ri-upload-cloud-2-line text-lg"></i> 2. 匯入 Excel 開始換算
+                    <i class="ri-upload-cloud-2-line text-lg"></i> 2. 匯入成績 Excel
                 </button>
                 <input type="file" id="excelInput" accept=".xlsx, .xls" class="hidden" onchange="handleExcelImport(this)">
             </div>
 
-            <!-- 3. 匯出結果 -->
-            <button id="btnExpFull" disabled onclick="exportResultExcel()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow hover:bg-emerald-700 disabled:opacity-30 transition flex items-center gap-2">
-                <i class="ri-file-excel-2-line text-lg"></i> 3. 匯出正式成績冊
+            <!-- 3. 匯出成果 -->
+            <button id="btnExpFull" disabled onclick="exportCalculatedResultExcel()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow hover:bg-emerald-700 disabled:opacity-30 transition flex items-center gap-2">
+                <i class="ri-file-excel-2-line text-lg"></i> 3. 匯出換算成績冊
             </button>
         </header>
 
-        <!-- 數據工作區 -->
+        <!-- 表格工作區 -->
         <div class="p-6 flex-1 flex flex-col overflow-hidden">
-            <!-- 大隊標籤頁 -->
-            <div class="flex border-b border-slate-200 mb-4 px-4 gap-1 bg-white rounded-t-xl shrink-0 overflow-x-auto">
+            <!-- 大隊 Tab -->
+            <div class="flex border-b border-slate-200 mb-4 px-4 overflow-x-auto shrink-0 gap-1 bg-white rounded-t-xl">
                 <button onclick="changeBatTab('ALL')" class="tab-btn active px-6 py-4 text-sm" id="tab-ALL">全體人員</button>
                 <button onclick="changeBatTab('第一大隊')" class="tab-btn px-6 py-4 text-sm" id="tab-第一大隊">第一大隊</button>
                 <button onclick="changeBatTab('第二大隊')" class="tab-btn px-6 py-4 text-sm" id="tab-第二大隊">第二大隊</button>
                 <button onclick="changeBatTab('第三大隊')" class="tab-btn px-6 py-4 text-sm" id="tab-第三大隊">第三大隊</button>
                 <button onclick="changeBatTab('第四大隊')" class="tab-btn px-6 py-4 text-sm" id="tab-第四大隊">第四大隊</button>
-                <button onclick="changeBatTab('ERR')" class="tab-btn px-6 py-4 text-sm text-rose-500" id="tab-ERR">異常偵測</button>
             </div>
 
-            <div class="mb-4 flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-200 shrink-0">
+            <div class="mb-4 flex items-center justify-between">
                 <div class="relative w-80">
                     <i class="ri-search-line absolute left-3 top-2.5 text-slate-400"></i>
-                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="搜尋姓名、單位..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-full outline-none focus:border-blue-500">
+                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="快速搜尋..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-full outline-none focus:border-blue-500 bg-white shadow-sm">
                 </div>
-                <div class="flex gap-6 text-xs font-bold text-slate-500">
-                    <span id="statTotal">總計: 0 人</span>
-                    <span class="text-emerald-600" id="statPass">及格: 0 人</span>
-                    <span class="text-rose-500" id="statError">異常: 0 人</span>
+                <div class="flex gap-4 text-[11px] font-bold text-slate-500 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
+                    總量: <span id="statTotal" class="text-blue-600">0</span> | 及格: <span id="statPass" class="text-emerald-600">0</span>
                 </div>
             </div>
 
@@ -103,16 +104,13 @@
                 <table id="mainTable">
                     <thead>
                         <tr>
-                            <th>序號</th><th>單位</th><th>姓名</th><th>年齡層</th>
-                            <th class="bg-blue-800 text-white">總分</th>
-                            <th class="bg-blue-800 text-white">判定</th>
-                            <th>跳遠</th><th>後拋</th><th>折返</th><th>硬舉</th>
-                            <th class="text-blue-600">懸吊(擇優)</th>
-                            <th>負重</th><th>跑步</th><th>系統備註</th>
+                            <th>序號</th><th>大隊</th><th>分隊</th><th>姓名</th><th>年齡層</th>
+                            <th class="bg-blue-800 text-white">總分</th><th class="bg-blue-800 text-white">判定</th>
+                            <th>跳遠分</th><th>後拋分</th><th>折返分</th><th>硬舉分</th><th class="text-blue-600">懸吊(擇優)</th><th>負重分</th><th>跑步分</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="15" class="py-20 text-slate-300">請匯入 Excel 進行數據換算</td></tr>
+                        <tr><td colspan="15" class="py-24 text-slate-300 italic">請先下載範例填報，再由匯入按鈕上傳 Excel</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -124,7 +122,8 @@
     let masterData = []; 
     let currentBat = 'ALL';
 
-    const UNIT_LIST = {
+    // 完整的單位地圖 (包含後補分隊)
+    const UNIT_CONFIG = {
         "第一大隊": ["第一大隊部", "華山分隊", "泉州分隊", "古亭分隊", "城中分隊", "忠孝分隊", "龍山分隊", "雙園分隊", "萬芳分隊", "景美分隊", "木柵分隊", "寶橋分隊"],
         "第二大隊": ["第二大隊部", "復興分隊", "金華分隊", "安和分隊", "信義分隊", "莊敬分隊", "永吉分隊", "成德分隊", "舊莊分隊", "南港分隊"],
         "第三大隊": ["第三大隊部", "大直分隊", "圓山分隊", "松江分隊", "建國分隊", "中崙分隊", "八德分隊", "民權分隊", "內湖分隊", "大湖分隊", "東湖分隊"],
@@ -132,42 +131,36 @@
     };
 
     // ==========================================
-    // 1. 核心精確對照表 (封裝您提供的階梯標準)
+    // 核心換算邏輯 (依照您提供的新版換算表級距)
     // ==========================================
-    const SCORING_MATRIX = {
+    const SCORING_RULES = {
         "女": {
             "不分年齡": {
-                "run": { op: "<=", list: [{v:450,s:20},{v:465,s:19},{v:480,s:18},{v:495,s:17},{v:510,s:16},{v:525,s:15},{v:540,s:14},{v:555,s:13},{v:570,s:12},{v:585,s:11},{v:590,s:10},{v:595,s:9},{v:600,s:8},{v:605,s:7},{v:610,s:6},{v:615,s:5},{v:620,s:4},{v:625,s:3},{v:630,s:2},{v:635,s:1}] },
-                "jump": { op: ">=", list: [{v:200,s:10},{v:190,s:9},{v:180,s:8},{v:170,s:7},{v:160,s:6},{v:155,s:5},{v:150,s:4},{v:145,s:3},{v:140,s:2},{v:135,s:1}] },
-                "throw": { op: ">=", list: [{v:13,s:15},{v:12,s:14},{v:11,s:13},{v:10,s:12},{v:9,s:11},{v:8.5,s:10},{v:8,s:9},{v:7.5,s:8},{v:7,s:7},{v:6.5,s:6},{v:6,s:5},{v:5.5,s:4},{v:5,s:3},{v:4.5,s:2},{v:3,s:1}] },
-                "deadlift": { op: ">=", list: [{v:140,s:20},{v:120,s:19},{v:110,s:18},{v:100,s:17},{v:90,s:16},{v:85,s:15},{v:80,s:14},{v:75,s:13},{v:70,s:12},{v:65,s:11},{v:60,s:10},{v:55,s:9},{v:50,s:8},{v:45,s:7},{v:40,s:6},{v:35,s:5},{v:30,s:4},{v:25,s:3},{v:20,s:1}] },
-                "shuttle": { op: ">=", list: [{v:15,s:10},{v:14,s:9},{v:13,s:8},{v:12,s:7},{v:11,s:6},{v:10,s:5},{v:9,s:4},{v:8,s:3},{v:7,s:2},{v:6,s:1}] },
-                "carry": { op: ">=", list: [{v:140,s:10},{v:120,s:9},{v:100,s:8},{v:90,s:7},{v:80,s:6},{v:70,s:5},{v:65,s:4},{v:60,s:3},{v:55,s:2},{v:50,s:1}] },
-                "hang_reps": { op: ">=", list: [{v:15,s:6},{v:14,s:5},{v:13,s:4},{v:12,s:3},{v:11,s:2},{v:9,s:1}] },
-                "hang_secs": { op: ">=", list: [{v:35,s:8},{v:32,s:7},{v:30,s:6},{v:28,s:5},{v:26,s:4},{v:24,s:3},{v:22,s:2},{v:20,s:1}] }
+                "run": { op: "<=", steps: [{v:450,s:20},{v:465,s:19},{v:480,s:18},{v:495,s:17},{v:510,s:16},{v:525,s:15},{v:540,s:14},{v:555,s:13},{v:570,s:12},{v:585,s:11},{v:590,s:10},{v:595,s:9},{v:600,s:8},{v:605,s:7},{v:610,s:6},{v:615,s:5},{v:620,s:4},{v:625,s:3},{v:630,s:2},{v:635,s:1}] },
+                "jump": { op: ">=", steps: [{v:200,s:10},{v:190,s:9},{v:180,s:8},{v:170,s:7},{v:160,s:6},{v:155,s:5},{v:150,s:4},{v:145,s:3},{v:140,s:2},{v:135,s:1}] },
+                "deadlift": { op: ">=", steps: [{v:140,s:20},{v:120,s:19},{v:110,s:18},{v:100,s:17},{v:90,s:16},{v:85,s:15},{v:80,s:14},{v:75,s:13},{v:70,s:12},{v:65,s:11},{v:60,s:10},{v:55,s:9},{v:50,s:8},{v:45,s:7},{v:40,s:6},{v:35,s:5},{v:30,s:4},{v:25,s:3},{v:20,s:1}] },
+                "h_reps": { op: ">=", steps: [{v:15,s:6},{v:14,s:5},{v:13,s:4},{v:12,s:3},{v:11,s:2},{v:9,s:1}] },
+                "h_secs": { op: ">=", steps: [{v:35,s:8},{v:32,s:7},{v:30,s:6},{v:28,s:5},{v:26,s:4},{v:24,s:3},{v:22,s:2},{v:20,s:1}] },
+                "shuttle": { op: ">=", steps: [{v:15,s:10},{v:14,s:9},{v:13,s:8},{v:12,s:7},{v:11,s:6},{v:10,s:5},{v:9,s:4},{v:8,s:3},{v:7,s:2},{v:6,s:1}] },
+                "throw": { op: ">=", steps: [{v:13,s:15},{v:12,s:14},{v:11,s:13},{v:10,s:12},{v:9,s:11},{v:8.5,s:10},{v:8,s:9},{v:7.5,s:8},{v:7,s:7},{v:6.5,s:6},{v:6,s:5},{v:5.5,s:4},{v:5,s:3},{v:4.5,s:2},{v:3,s:1}] },
+                "carry": { op: ">=", steps: [{v:140,s:10},{v:120,s:9},{v:100,s:8},{v:90,s:7},{v:80,s:6},{v:70,s:5},{v:65,s:4},{v:60,s:3},{v:55,s:2},{v:50,s:1}] }
             }
         },
         "男": {
-            "30-39": {
-                "run": { op: "<=", list: [{v:350,s:20},{v:365,s:19},{v:380,s:18},{v:395,s:17},{v:410,s:16},{v:425,s:15},{v:440,s:14},{v:455,s:13},{v:470,s:12},{v:480,s:11},{v:490,s:10},{v:500,s:9},{v:510,s:8},{v:520,s:7},{v:530,s:6},{v:540,s:5},{v:550,s:4},{v:560,s:3},{v:570,s:2},{v:580,s:1}] },
-                "jump": { op: ">=", list: [{v:256,s:10},{v:245,s:9},{v:235,s:8},{v:225,s:7},{v:215,s:6},{v:205,s:5},{v:200,s:4},{v:195,s:3},{v:190,s:2},{v:185,s:1}] }
-            },
             "40-49": {
-                "run": { op: "<=", list: [{v:375,s:20},{v:390,s:19},{v:405,s:18},{v:420,s:17},{v:435,s:16},{v:450,s:15},{v:465,s:14},{v:480,s:13},{v:495,s:12},{v:505,s:11},{v:515,s:10},{v:525,s:9},{v:535,s:8},{v:545,s:7},{v:555,s:6},{v:565,s:5},{v:575,s:4},{v:585,s:3},{v:595,s:2},{v:605,s:1}] },
-                "jump": { op: ">=", list: [{v:251,s:10},{v:240,s:9},{v:230,s:8},{v:220,s:7},{v:210,s:6},{v:200,s:5},{v:195,s:4},{v:190,s:3},{v:185,s:2},{v:180,s:1}] }
+                "run": { op: "<=", steps: [{v:375,s:20},{v:390,s:19},{v:405,s:18},{v:420,s:17},{v:435,s:16},{v:450,s:15},{v:465,s:14},{v:480,s:13},{v:495,s:12},{v:505,s:11},{v:515,s:10},{v:525,s:9},{v:535,s:8},{v:545,s:7},{v:555,s:6},{v:565,s:5},{v:575,s:4},{v:585,s:3},{v:595,s:2},{v:605,s:1}] }
             }
-            // 其餘年齡層項目可在此字典中完整複製填入，邏輯相同
+            // 其餘對照數據可依照此 JSON 結構補足
         }
     };
 
-    function lookupPreciseScore(val, gender, ageGroup, item) {
+    function lookupScore(val, gender, ageGrp, item) {
         if (!val || isNaN(val) || val <= 0) return 0;
         const g = gender === '女' ? '女' : '男';
-        const a = g === '女' ? '不分年齡' : ageGroup;
-        const ruleset = SCORING_MATRIX[g] && SCORING_MATRIX[g][a] ? SCORING_MATRIX[g][a][item] : null;
+        const a = g === '女' ? '不分年齡' : ageGrp;
+        const ruleset = SCORING_RULES[g] && SCORING_RULES[g][a] ? SCORING_RULES[g][a][item] : null;
         if (!ruleset) return 0;
-
-        for (let r of ruleset.list) {
+        for (let r of ruleset.steps) {
             if (ruleset.op === ">=" && val >= r.v) return r.s;
             if (ruleset.op === "<=" && val <= r.v) return r.s;
         }
@@ -175,51 +168,52 @@
     }
 
     // ==========================================
-    // 2. Excel 處理模組 (修復轉圈圈不動的問題)
+    // 非同步處理 Excel (確保轉圈圈後一定會下載)
     // ==========================================
-    function showUI(msg) { $('#loadingText').innerText = msg; $('#loading').classList.remove('hidden').classList.add('flex'); }
-    function hideUI() { $('#loading').classList.add('hidden'); }
-
-    // 解決轉圈圈不動：使用非同步 Promise + setTimeout 讓 UI 先跑
-    async function runAsync(msg, fn) {
-        showUI(msg);
-        await new Promise(r => setTimeout(r, 100)); // 讓瀏覽器有時間秀出 Loading
-        try { await fn(); } catch(e) { console.error(e); alert("處理發生錯誤: " + e.message); }
-        finally { hideUI(); }
+    async function processUI(msg, taskFn) {
+        $('#loadingText').innerText = msg;
+        $('#loading').classList.remove('hidden').classList.add('flex');
+        await new Promise(r => setTimeout(r, 100)); // 給瀏覽器繪製 UI
+        try {
+            await taskFn();
+        } catch (e) {
+            console.error(e);
+            alert("錯誤: " + e.message);
+        } finally {
+            $('#loading').classList.add('hidden');
+        }
     }
 
-    // 匯出範例
-    async function exportTemplateExcel(bat) {
-        await runAsync(`正在準備 ${bat} 範例...`, async () => {
+    // 下載範例 Excel
+    async function exportBatchTemplateExcel(bat) {
+        await processUI(`正在生成 ${bat} 範例 Excel...`, async () => {
             const wb = new ExcelJS.Workbook();
-            const ws = wb.addWorksheet('體能成績填報');
+            const ws = wb.addWorksheet('填報表');
             ws.columns = [
-                {header:'序號', width:8}, {header:'大隊', width:12}, {header:'分隊', width:18}, {header:'姓名', width:12},
+                {header:'序號', width:8}, {header:'大隊', width:12}, {header:'分隊', width:15}, {header:'姓名', width:12},
                 {header:'性別', width:8}, {header:'年齡', width:8}, {header:'年齡層', width:12},
-                {header:'立定跳遠(cm)', width:15}, {header:'後拋擲遠(m)', width:15}, {header:'折返跑(趟)', width:12},
-                {header:'菱形槓硬舉(kg)', width:15}, {header:'懸吊(次)', width:10}, {header:'懸吊(秒)', width:10},
-                {header:'負重行走(kg)', width:15}, {header:'1500m跑(秒)', width:15}
+                {header:'立定跳遠(cm)', width:12}, {header:'後拋擲遠(m)', width:12}, {header:'折返跑(趟)', width:12},
+                {header:'菱形槓硬舉(kg)', width:12}, {header:'懸吊(次)', width:12}, {header:'懸吊(秒)', width:12},
+                {header:'負重行走(kg)', width:12}, {header:'跑步(秒)', width:12}
             ];
-            ws.getRow(1).font = {bold:true, color:{argb:'FFFFFFFF'}};
-            ws.getRow(1).fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF1E293B'}};
-
-            const units = UNIT_LIST[bat] || [];
+            // 單位清單填充
+            const units = UNIT_CONFIG[bat] || [];
             units.forEach((u, i) => ws.addRow([i+1, bat, u]));
-
-            const buf = await wb.xlsx.writeBuffer();
-            saveAs(new Blob([buf]), `${bat}_填報範例.xlsx`);
+            
+            const buffer = await wb.xlsx.writeBuffer();
+            saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${bat}_填報範例.xlsx`);
         });
     }
 
-    // 匯入 Excel 進行 1,600 人等級計算
+    // 匯入 Excel 進行萬筆級換算
     async function handleExcelImport(input) {
         const file = input.files[0];
         if(!file) return;
-        await runAsync("讀取 Excel 並執行 1,600 人階梯換算中...", async () => {
+        await processUI("讀取檔案並執行 1,600 人階梯換算中...", async () => {
             const wb = new ExcelJS.Workbook();
             await wb.xlsx.load(file);
             const ws = wb.worksheets[0];
-            const result = [];
+            const dataArr = [];
 
             ws.eachRow((row, rowNumber) => {
                 if (rowNumber === 1) return;
@@ -228,7 +222,6 @@
                     unit: row.getCell(3).value || '',
                     name: row.getCell(4).value || '',
                     gender: row.getCell(5).value || '男',
-                    age: parseInt(row.getCell(6).value) || 30,
                     ageGrp: row.getCell(7).value || '30-39',
                     vJump: parseFloat(row.getCell(8).value) || 0,
                     vThrow: parseFloat(row.getCell(9).value) || 0,
@@ -240,64 +233,49 @@
                     vRun: parseFloat(row.getCell(15).value) || 0
                 };
 
-                // Typo 校正
-                if(r.vThrow > 30) r.vThrow /= 10;
-                if(r.vDead > 500) r.vDead /= 10;
-
-                // 執行階梯查表
-                r.sJump = lookupPreciseScore(r.vJump, r.gender, r.ageGrp, 'jump');
-                r.sThrow = lookupPreciseScore(r.vThrow, r.gender, r.ageGrp, 'throw');
-                r.sShuttle = lookupPreciseScore(r.vShuttle, r.gender, r.ageGrp, 'shuttle');
-                r.sDead = lookupPreciseScore(r.vDead, r.gender, r.ageGrp, 'deadlift');
-                r.sCarry = lookupPreciseScore(r.vCarry, r.gender, r.ageGrp, 'carry');
-                r.sRun = lookupPreciseScore(r.vRun || 9999, r.gender, r.ageGrp, 'run');
+                // 換算單項得分
+                r.sJump = lookupScore(r.vJump, r.gender, r.ageGrp, 'jump');
+                r.sThrow = lookupScore(r.vThrow > 30 ? r.vThrow/10 : r.vThrow, r.gender, r.ageGrp, 'throw');
+                r.sShuttle = lookupScore(r.vShuttle, r.gender, r.ageGrp, 'shuttle');
+                r.sDead = lookupScore(r.vDead > 500 ? r.vDead/10 : r.vDead, r.gender, r.ageGrp, 'deadlift');
+                r.sCarry = lookupScore(r.vCarry, r.gender, r.ageGrp, 'carry');
+                r.sRun = lookupScore(r.vRun || 9999, r.gender, r.ageGrp, 'run');
                 
-                // 懸吊擇優 (MAX)
-                let scH1 = lookupPreciseScore(r.vHangR, r.gender, r.ageGrp, 'hang_reps');
-                let scH2 = lookupPreciseScore(r.vHangS, r.gender, r.ageGrp, 'hang_secs');
-                r.sHangMax = Math.max(scH1, scH2);
+                // 懸吊擇優
+                r.sHang = Math.max(lookupScore(r.vHangR, r.gender, r.ageGrp, 'h_reps'), lookupScore(r.vHangS, r.gender, r.ageGrp, 'h_secs'));
 
-                r.total = r.sJump + r.sThrow + r.sShuttle + r.sDead + r.sCarry + r.sRun + r.sHangMax;
+                r.total = r.sJump + r.sThrow + r.sShuttle + r.sDead + r.sCarry + r.sRun + r.sHang;
                 r.grade = r.total >= 60 ? "及格" : "不及格";
-                r.err = r.age > 70 ? "年齡異常" : (r.total === 0 ? "缺考" : "");
-
-                result.push(r);
+                dataArr.push(r);
             });
 
-            masterData = result;
-            $('#btnExpFull').disabled = false;
+            masterData = dataArr;
             renderTable();
             updateStats();
-            input.value = "";
+            $('#btnExpFull').disabled = false;
         });
+        input.value = "";
     }
 
     function renderTable() {
         const body = $('#tableBody'); body.innerHTML = '';
-        const search = $('#searchInput').value.toLowerCase();
-
+        const keyword = $('#searchInput').value.toLowerCase();
         const filtered = masterData.filter(d => {
-            if(currentBat === 'ERR') return d.err !== "";
             const mBat = currentBat === 'ALL' || d.bat === currentBat;
-            const mSearch = d.name.includes(search) || d.unit.includes(search);
-            return mBat && mSearch;
+            return mBat && (d.name.includes(keyword) || d.unit.includes(keyword));
         });
 
-        // 僅預覽前 100 筆確保畫面流暢
+        // 僅前端分頁預覽，匯出會全量處理
         filtered.slice(0, 100).forEach((r, i) => {
             const tr = document.createElement('tr');
-            if(r.err) tr.classList.add('error-row');
             tr.innerHTML = `
                 <td>${i+1}</td><td>${r.bat}</td><td>${r.unit}</td><td class="font-bold text-blue-700">${r.name}</td><td>${r.ageGrp}</td>
-                <td class="font-black text-blue-900 bg-blue-50 text-lg">${r.total}</td>
-                <td><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.grade==='及格'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}">${r.grade}</span></td>
-                <td>${r.sJump}</td><td>${r.sThrow}</td><td>${r.sShuttle}</td><td>${r.sDead}</td>
-                <td class="bg-amber-50 font-bold text-amber-700">${r.sHangMax}</td>
-                <td>${r.sCarry}</td><td>${r.sRun}</td><td>${r.err}</td>
+                <td class="font-black text-blue-900 bg-blue-50">${r.total}</td>
+                <td class="bg-blue-50"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.grade==='及格'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}">${r.grade}</span></td>
+                <td>${r.sJump}</td><td>${r.sThrow}</td><td>${r.sShuttle}</td><td>${r.sDead}</td><td class="font-bold text-amber-700">${r.sHang}</td><td>${r.sCarry}</td><td>${r.sRun}</td>
             `;
             body.appendChild(tr);
         });
-        if(filtered.length === 0) body.innerHTML = '<tr><td colspan="15" class="py-20 text-slate-300">查無資料</td></tr>';
     }
 
     function changeBatTab(bat) {
@@ -309,23 +287,22 @@
 
     function updateStats() {
         $('#statTotal').innerText = masterData.length;
-        $('#statPass').innerText = masterData.filter(d => d.grade==='及格').length;
-        $('#statError').innerText = masterData.filter(d => d.err !== "").length;
+        $('#statPass').innerText = masterData.filter(d => d.grade === '及格').length;
     }
 
-    async function exportResultExcel() {
-        await runAsync("正在產生 1,600 人成績換算大表 Excel...", async () => {
+    async function exportCalculatedResultExcel() {
+        await processUI("正在封裝正式成績大表 Excel...", async () => {
             const wb = new ExcelJS.Workbook();
             const ws = wb.addWorksheet('換算總表');
             ws.columns = [
                 {header:'大隊', key:'bat', width:12}, {header:'單位', key:'unit', width:15}, {header:'姓名', key:'name', width:12},
-                {header:'總分', key:'total', width:10}, {header:'判定', key:'grade', width:10},
+                {header:'年齡層', key:'ageGrp', width:12}, {header:'總分', key:'total', width:10}, {header:'及格判定', key:'grade', width:12},
                 {header:'跳遠分', key:'sJump'}, {header:'後拋分', key:'sThrow'}, {header:'折返分', key:'sShuttle'},
-                {header:'硬舉分', key:'sDead'}, {header:'懸吊擇優分', key:'sHangMax'}, {header:'負重分', key:'sCarry'}, {header:'跑步分', key:'sRun'}
+                {header:'硬舉分', key:'sDead'}, {header:'懸吊分', key:'sHang'}, {header:'負重分', key:'sCarry'}, {header:'跑步分', key:'sRun'}
             ];
             masterData.forEach(r => ws.addRow(r));
-            const buf = await wb.xlsx.writeBuffer();
-            saveAs(new Blob([buf]), `體能測驗成績換算結果_${new Date().getTime()}.xlsx`);
+            const buffer = await wb.xlsx.writeBuffer();
+            saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `114年體測成績手冊_${new Date().getTime()}.xlsx`);
         });
     }
 </script>
