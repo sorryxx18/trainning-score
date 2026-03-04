@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>114年體能測驗精確換算系統</title>
+    <title>114年體能測驗精確換算系統 (雲端同步版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -11,47 +11,69 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; overflow: hidden; }
-        .table-wrapper { height: calc(100vh - 220px); overflow: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .table-wrapper { height: calc(100vh - 250px); overflow: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
         th { background: #1e293b; color: white; position: sticky; top: 0; z-index: 10; font-size: 13px; padding: 10px; white-space: nowrap; }
         td { border-bottom: 1px solid #f1f5f9; padding: 8px; text-align: center; font-size: 13px; white-space: nowrap; }
         .tab-btn.active { border-bottom: 4px solid #2563eb; color: #2563eb; font-weight: bold; background: #eff6ff; }
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        /* Loading 遮罩 */
+        #loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; flex-direction: column; align-items: center; justify-content: center; color: white; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
 
+    <!-- Loading 遮罩 -->
+    <div id="loader">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid mb-4"></div>
+        <p class="text-xl font-bold">GAS 正在換算並存入 Google Sheet，請稍候...</p>
+    </div>
+
     <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 shadow-2xl">
         <div class="p-6 border-b border-slate-800 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg"><i class="ri-run-line text-2xl"></i></div>
-            <span class="font-bold text-white">體能換算系統</span>
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg"><i class="ri-cloud-line text-2xl"></i></div>
+            <span class="font-bold text-white">體能換算系統 <span class="text-[10px] bg-blue-500 px-1 rounded">雲端版</span></span>
         </div>
-        <nav class="p-4 flex-1"><div class="bg-blue-600 text-white p-3 rounded-xl flex items-center gap-3 shadow-lg"><i class="ri-dashboard-3-line text-xl"></i><span class="font-bold">數據中心</span></div></nav>
+        <nav class="p-4 flex-1">
+            <div class="bg-blue-600 text-white p-3 rounded-xl flex items-center gap-3 shadow-lg mb-4"><i class="ri-dashboard-3-line text-xl"></i><span class="font-bold">數據中心</span></div>
+            <div class="p-3">
+                <label class="text-xs text-slate-500 block mb-1">GAS API 網址</label>
+                <input type="password" id="gasUrl" placeholder="貼上 GAS 部署網址" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-white focus:outline-none focus:border-blue-500">
+            </div>
+        </nav>
     </aside>
 
     <main class="flex-1 flex flex-col min-w-0">
-        <header class="bg-white border-b border-slate-200 p-4 px-8 flex items-center justify-between shrink-0 shadow-sm">
+        <header class="bg-white border-b border-slate-200 p-4 px-8 flex flex-wrap items-center justify-between shrink-0 shadow-sm gap-4">
             <div class="flex items-center gap-4">
+                <!-- 1. 下載範例 -->
                 <div class="relative group">
-                    <button class="bg-slate-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-black transition shadow-md">
-                        <i class="ri-file-download-line text-lg"></i> 1. 下載範例 (CSV)
+                    <button class="bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-black transition">
+                        <i class="ri-file-download-line text-lg"></i> 1. 下載範例
                     </button>
                     <div class="absolute left-0 top-full pt-2 w-48 hidden group-hover:block z-50">
                         <div class="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden p-1">
-                            <div onclick="downloadSample('第一大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1 border-b">第一大隊範例</div>
-                            <div onclick="downloadSample('第二大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1 border-b">第二大隊範例</div>
-                            <div onclick="downloadSample('第三大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded mb-1 border-b">第三大隊範例</div>
-                            <div onclick="downloadSample('第四大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 rounded">第四大隊範例</div>
+                            <div onclick="downloadSample('第一大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 border-b">第一大隊範例</div>
+                            <div onclick="downloadSample('第二大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 border-b">第二大隊範例</div>
+                            <div onclick="downloadSample('第三大隊')" class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700">第四大隊範例</div>
                         </div>
                     </div>
                 </div>
-                <button onclick="$('#fileInput').click()" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 active:scale-95 transition">
-                    <i class="ri-upload-cloud-2-line text-lg"></i> 2. 匯入填好成績的檔案
+                
+                <!-- 2. 匯入 -->
+                <button onclick="$('#fileInput').click()" class="bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-200 flex items-center gap-2 active:scale-95 transition">
+                    <i class="ri-upload-cloud-2-line text-lg"></i> 2. 匯入原始成績
                 </button>
                 <input type="file" id="fileInput" accept=".csv" class="hidden" onchange="handleImport(this)">
+
+                <!-- 3. GAS 啟動 -->
+                <button id="btnSync" disabled onclick="uploadToGAS()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg hover:bg-blue-700 disabled:opacity-30 flex items-center gap-2">
+                    <i class="ri-refresh-line text-lg animate-pulse"></i> 3. 啟動 GAS 換算並存檔
+                </button>
             </div>
-            <button id="btnExport" disabled onclick="exportResultCsv()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow hover:bg-emerald-700 disabled:opacity-30 transition flex items-center gap-2">
-                <i class="ri-file-excel-2-line text-lg"></i> 3. 匯出換算成績冊
+
+            <button id="btnExport" disabled onclick="exportResultCsv()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-emerald-700 disabled:opacity-30 transition flex items-center gap-2">
+                <i class="ri-file-excel-2-line text-lg"></i> 4. 匯出結果
             </button>
         </header>
 
@@ -70,11 +92,11 @@
                         <tr>
                             <th>序</th><th>單位</th><th>姓名</th><th>年齡層</th>
                             <th class="bg-blue-800 text-white">總分</th><th class="bg-blue-800 text-white">及格判定</th>
-                            <th>跳遠分</th><th>後拋分</th><th>折返分</th><th>硬舉分</th><th class="text-blue-600">懸吊(MAX)</th><th>負重分</th><th>跑步分</th>
+                            <th>跳遠分</th><th>後拋分</th><th>折返分</th><th>硬舉分</th><th>懸吊分</th><th>負重分</th><th>跑步分</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="15" class="py-24 text-slate-300 italic text-lg">請上傳包含成績的 CSV 檔案以進行「精確查表換算」</td></tr>
+                        <tr><td colspan="15" class="py-24 text-slate-300 italic text-lg text-center">請先匯入原始成績 CSV...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -85,163 +107,92 @@
     const $ = (s) => document.querySelector(s);
     let masterData = []; 
     let currentBat = 'ALL';
-    let SCORE_DB = {}; 
 
-    // ==========================================
-    // 1. 核心大腦：建立所有性別、年齡層的精確對照地圖
-    // ==========================================
-    const RULE_TEXT = `性別,年齡層,項目,比較方式,得分,值
-女,不分年齡,1500跑步,<=,20,450
-女,不分年齡,1500跑步,<=,1,635
-女,不分年齡,立定跳遠,>=,10,200
-女,不分年齡,立定跳遠,>=,9,190
-女,不分年齡,立定跳遠,>=,8,180
-女,不分年齡,立定跳遠,>=,7,170
-女,不分年齡,立定跳遠,>=,6,160
-女,不分年齡,立定跳遠,>=,5,155
-女,不分年齡,立定跳遠,>=,4,150
-女,不分年齡,立定跳遠,>=,3,145
-女,不分年齡,立定跳遠,>=,2,140
-女,不分年齡,立定跳遠,>=,1,135
-女,不分年齡,後拋擲遠,>=,15,13
-女,不分年齡,後拋擲遠,>=,1,3
-女,不分年齡,菱形槓硬舉,>=,20,140
-女,不分年齡,菱形槓硬舉,>=,1,20
-女,不分年齡,折返跑,>=,10,15
-女,不分年齡,折返跑,>=,1,5
-女,不分年齡,負重行走,>=,10,140
-女,不分年齡,負重行走,>=,1,50
-女,不分年齡,懸吊屈體,>=,15,6
-女,不分年齡,懸吊屈體,>=,9,1
-女,不分年齡,懸吊秒數,>=,35,8
-女,不分年齡,懸吊秒數,>=,20,1
-男,20-29,1500跑步,<=,20,340
-男,20-29,1500跑步,<=,1,570
-男,30-39,1500跑步,<=,20,350
-男,30-39,1500跑步,<=,1,580
-男,30-39,立定跳遠,>=,10,256
-男,30-39,立定跳遠,>=,1,185
-男,40-49,1500跑步,<=,20,375
-男,40-49,1500跑步,<=,19,390
-男,40-49,1500跑步,<=,18,405
-男,40-49,1500跑步,<=,17,420
-男,40-49,1500跑步,<=,16,435
-男,40-49,1500跑步,<=,15,450
-男,40-49,1500跑步,<=,14,465
-男,40-49,1500跑步,<=,13,480
-男,40-49,1500跑步,<=,12,495
-男,40-49,1500跑步,<=,11,505
-男,40-49,1500跑步,<=,10,515
-男,40-49,1500跑步,<=,9,525
-男,40-49,1500跑步,<=,8,535
-男,40-49,1500跑步,<=,7,545
-男,40-49,1500跑步,<=,6,555
-男,40-49,1500跑步,<=,5,565
-男,40-49,1500跑步,<=,4,575
-男,40-49,1500跑步,<=,3,585
-男,40-49,1500跑步,<=,2,595
-男,40-49,1500跑步,<=,1,605
-男,40-49,立定跳遠,>=,10,250
-男,40-49,立定跳遠,>=,9,240
-男,40-49,立定跳遠,>=,8,230
-男,40-49,立定跳遠,>=,7,220
-男,40-49,立定跳遠,>=,6,210
-男,40-49,立定跳遠,>=,5,200
-男,40-49,立定跳遠,>=,4,195
-男,40-49,立定跳遠,>=,3,190
-男,40-49,立定跳遠,>=,2,185
-男,40-49,立定跳遠,>=,1,180
-男,50+,1500跑步,<=,20,515
-男,50+,1500跑步,<=,1,690`;
-
-    function initEngine() {
-        const rows = Papa.parse(RULE_TEXT.trim(), {header:true}).data;
-        rows.forEach(r => {
-            let key = `${r.性別}_${r.年齡層}_${r.項目}`;
-            if(!SCORE_DB[key]) SCORE_DB[key] = { op: r.比較方式, steps: [] };
-            SCORE_DB[key].steps.push({ v: parseFloat(r.值), s: parseInt(r.得分) });
-        });
-        // 排序：>= 由大到小；<= 由小到大
-        for(let k in SCORE_DB) {
-            let m = SCORE_DB[k];
-            if(m.op === '>=') m.steps.sort((a,b) => b.v - a.v);
-            else m.steps.sort((a,b) => a.v - b.v);
-        }
-    }
-    initEngine();
-
-    function lookup(val, gender, ageGrp, item) {
-        if(!val || isNaN(val) || val <= 0) return 0;
-        const g = gender === '女' ? '女' : '男';
-        const a = g === '女' ? '不分年齡' : ageGrp;
-        const rule = SCORE_DB[`${g}_${a}_${item}`];
-        if(!rule) return 0;
-        for(let step of rule.steps) {
-            if(rule.op === '>=' && val >= step.v) return step.s;
-            if(rule.op === '<=' && val <= step.v) return step.s;
-        }
-        return 0;
-    }
-
-    // ==========================================
-    // 2. 檔案處理 (與您的截圖欄位完全對標)
-    // ==========================================
+    // 1. 處理匯入：只讀取數據，不換算
     function handleImport(input) {
         const file = input.files[0];
         if(!file) return;
+        
         Papa.parse(file, {
             header: true, skipEmptyLines: true, encoding: "UTF-8",
             complete: function(results) {
-                masterData = results.data.map(r => {
-                    let d = {
-                        bat: r['大隊']||r['單位']||'第一大隊', unit: r['單位']||r['分隊']||'分隊', 
-                        name: r['姓名'], gender: r['性別']||'男', ageGrp: r['年齡層']||'40-49',
-                        vJ: parseFloat(r['立定跳遠(cm)'])||0, vT: parseFloat(r['後拋擲遠(m)'])||0,
-                        vS: parseFloat(r['折返跑(趟)'])||0, vD: parseFloat(r['菱形槓硬舉(公斤)'])||0,
-                        vH1: parseFloat(r['懸吊屈體(次)'])||0, vH2: parseFloat(r['懸吊屈體(秒)'])||0,
-                        vC: parseFloat(r['六角槓負重行走(公斤)'])||0, vR: parseFloat(r['1500公尺跑步(秒)'])||0
-                    };
-                    
-                    // 執行換算
-                    d.sJ = lookup(d.vJ, d.gender, d.ageGrp, '立定跳遠');
-                    d.sT = lookup(d.vT > 30 ? d.vT/10 : d.vT, d.gender, d.ageGrp, '後拋擲遠');
-                    d.sS = lookup(d.vS, d.gender, d.ageGrp, '折返跑');
-                    d.sD = lookup(d.vD > 500 ? d.vD/10 : d.vD, d.gender, d.ageGrp, '菱形槓硬舉');
-                    d.sC = lookup(d.vC, d.gender, d.ageGrp, '負重行走');
-                    d.sR = lookup(d.vR||9999, d.gender, d.ageGrp, '1500跑步');
-                    
-                    // 懸吊擇優
-                    d.sH = Math.max(lookup(d.vH1, d.gender, d.ageGrp, '懸吊屈體'), lookup(d.vH2, d.gender, d.ageGrp, '懸吊秒數'));
-
-                    d.total = d.sJ + d.sT + d.sS + d.sD + d.sC + d.sR + d.sH;
-                    d.grade = d.total >= 60 ? '及格' : '不及格';
-                    return d;
-                });
+                masterData = results.data.map(r => ({
+                    bat: r['大隊']||'第一大隊', 
+                    unit: r['單位']||'分隊', 
+                    name: r['姓名'], 
+                    gender: r['性別']||'男', 
+                    ageGrp: r['年齡層']||'40-49',
+                    // 原始數值
+                    vJ: r['立定跳遠(cm)'], vT: r['後拋擲遠(m)'], vS: r['折返跑(趟)'], 
+                    vD: r['菱形槓硬舉(公斤)'], vH1: r['懸吊屈體(次)'], vH2: r['懸吊屈體(秒)'],
+                    vC: r['六角槓負重行走(公斤)'], vR: r['1500公尺跑步(秒)'],
+                    // 預設為等待中
+                    total: '---', grade: '等待計算',
+                    sJ: '...', sT: '...', sS: '...', sD: '...', sH: '...', sC: '...', sR: '...'
+                }));
                 renderTable();
-                $('#btnExport').disabled = false;
+                $('#btnSync').disabled = false;
                 input.value = "";
             }
         });
     }
 
+    // 2. 渲染表格
     function renderTable() {
         const body = $('#tableBody'); body.innerHTML = '';
-        const search = $('#searchInput').value.toLowerCase();
-        const filtered = masterData.filter(d => {
-            const mBat = currentBat === 'ALL' || d.bat === currentBat;
-            return mBat && (d.name.includes(search) || d.unit.includes(search));
-        });
+        const filtered = masterData.filter(d => currentBat === 'ALL' || d.bat === currentBat);
 
-        filtered.slice(0, 150).forEach((r, i) => {
+        filtered.forEach((r, i) => {
             const tr = document.createElement('tr');
+            const gradeColor = r.grade === '及格' ? 'text-emerald-600' : (r.grade === '不及格' ? 'text-rose-600' : 'text-slate-400');
             tr.innerHTML = `
                 <td>${i+1}</td><td>${r.bat}</td><td>${r.unit}</td><td class="font-bold text-blue-700">${r.name}</td><td>${r.ageGrp}</td>
                 <td class="font-black text-blue-900 bg-blue-50 text-lg">${r.total}</td>
-                <td class="bg-blue-50 font-bold ${r.grade==='及格'?'text-emerald-600':'text-rose-600'}">${r.grade}</td>
-                <td>${r.sJ}</td><td>${r.sT}</td><td>${r.sS}</td><td>${r.sD}</td><td class="bg-amber-50 font-bold">${r.sH}</td><td>${r.sC}</td><td>${r.sR}</td>
+                <td class="bg-blue-50 font-bold ${gradeColor}">${r.grade}</td>
+                <td>${r.sJ}</td><td>${r.sT}</td><td>${r.sS}</td><td>${r.sD}</td><td>${r.sH}</td><td>${r.sC}</td><td>${r.sR}</td>
             `;
             body.appendChild(tr);
         });
+    }
+
+    // 3. 重頭戲：上傳資料到 GAS 並接收回傳結果
+    async function uploadToGAS() {
+        const gasUrl = $('#gasUrl').value.trim();
+        if(!gasUrl) {
+            alert("請先在左側選單輸入 GAS 部署網址！");
+            return;
+        }
+
+        $('#loader').style.display = 'flex';
+
+        try {
+            // 將整份 masterData 發送到 GAS
+            const response = await fetch(gasUrl, {
+                method: 'POST',
+                mode: 'no-cors', // 視 GAS 設定而定，通常用 no-cors 或讓 GAS 處理 CORS
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(masterData)
+            });
+
+            // 注意：由於 GAS 的 Web App 處理 CORS 比較特殊
+            // 如果你使用 no-cors，前端無法讀取回傳 JSON。
+            // 建議 GAS 端使用 ContentService 並在前端處理 Redirect。
+            // 這裡假設 GAS 成功執行並回傳最新資料：
+            
+            // 這裡模擬 GAS 回傳並處理 (實際開發時需根據 GAS 回傳的 JSON 更新 masterData)
+            alert("資料已發送！請檢查 Google Sheet 是否已有資料。\n(提醒：若要即時同步換算結果至網頁，GAS 需設定 CORS 或透過特定管道回傳)");
+            
+            // 這裡你可以加上「向 GAS 請求換算結果」的邏輯
+            // masterData = await getResultsFromGAS(); 
+            // renderTable();
+
+        } catch (error) {
+            console.error("Sync Error:", error);
+            alert("傳輸失敗，請檢查 URL 或網路設定");
+        } finally {
+            $('#loader').style.display = 'none';
+            $('#btnExport').disabled = false;
+        }
     }
 
     function downloadSample(bat) {
