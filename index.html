@@ -3,46 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>114年體能測驗換算系統 (CSV版)</title>
+    <title>114年體能測驗精確換算系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; overflow: hidden; }
-        .table-wrapper { height: calc(100vh - 240px); overflow: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
-        th { background: #1e293b; color: white; position: sticky; top: 0; z-index: 10; font-size: 13px; padding: 12px 8px; white-space: nowrap; }
-        td { border-bottom: 1px solid #f1f5f9; padding: 10px 8px; text-align: center; font-size: 13px; white-space: nowrap; }
+        .table-wrapper { height: calc(100vh - 220px); overflow: auto; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
+        th { background: #1e293b; color: white; position: sticky; top: 0; z-index: 10; font-size: 13px; padding: 10px; white-space: nowrap; }
+        td { border-bottom: 1px solid #f1f5f9; padding: 8px; text-align: center; font-size: 13px; white-space: nowrap; }
         .tab-btn.active { border-bottom: 4px solid #2563eb; color: #2563eb; font-weight: bold; background: #eff6ff; }
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .error-row td { background-color: #fff1f2 !important; color: #be123c; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
 
-    <!-- 左側側欄 -->
     <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 shadow-2xl">
         <div class="p-6 border-b border-slate-800 flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg"><i class="ri-run-line text-2xl"></i></div>
             <span class="font-bold text-white">體能換算系統</span>
         </div>
-        <nav class="p-4 space-y-2 flex-1">
-            <div class="bg-blue-600 text-white p-3 rounded-xl flex items-center gap-3 shadow-lg"><i class="ri-dashboard-3-line text-xl"></i><span class="font-bold">換算管理中心</span></div>
-        </nav>
+        <nav class="p-4 flex-1"><div class="bg-blue-600 text-white p-3 rounded-xl flex items-center gap-3 shadow-lg"><i class="ri-dashboard-3-line text-xl"></i><span class="font-bold">數據中心</span></div></nav>
     </aside>
 
-    <!-- 主內容區 -->
     <main class="flex-1 flex flex-col min-w-0">
-        <!-- 第一頁頂部：功能並列 -->
         <header class="bg-white border-b border-slate-200 p-4 px-8 flex items-center justify-between shrink-0 shadow-sm">
             <div class="flex items-center gap-4">
-                <!-- 1. 下載範例 -->
                 <div class="relative group">
                     <button class="bg-slate-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-black transition shadow-md">
-                        <i class="ri-file-list-3-line text-lg"></i> 1. 下載填報範例 (CSV)
+                        <i class="ri-file-download-line text-lg"></i> 1. 下載範例 (CSV)
                     </button>
                     <div class="absolute left-0 top-full pt-2 w-48 hidden group-hover:block z-50">
                         <div class="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden p-1">
@@ -53,52 +45,36 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- 2. 匯入換算 -->
                 <button onclick="$('#fileInput').click()" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 active:scale-95 transition">
-                    <i class="ri-upload-cloud-2-line text-lg"></i> 2. 匯入成績表 (CSV)
+                    <i class="ri-upload-cloud-2-line text-lg"></i> 2. 匯入填好成績的檔案
                 </button>
                 <input type="file" id="fileInput" accept=".csv" class="hidden" onchange="handleImport(this)">
             </div>
-
-            <!-- 3. 匯出結果 -->
             <button id="btnExport" disabled onclick="exportResultCsv()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow hover:bg-emerald-700 disabled:opacity-30 transition flex items-center gap-2">
-                <i class="ri-file-excel-2-line text-lg"></i> 3. 匯出換算成績冊 (CSV)
+                <i class="ri-file-excel-2-line text-lg"></i> 3. 匯出換算成績冊
             </button>
         </header>
 
         <div class="p-6 flex-1 flex flex-col overflow-hidden">
-            <!-- 大隊 Tab 分頁 -->
             <div class="flex border-b border-slate-200 mb-4 px-4 overflow-x-auto shrink-0 gap-1 bg-white rounded-t-xl">
                 <button onclick="changeBat('ALL')" class="tab-btn active px-6 py-4 text-sm" id="tab-ALL">全體人員</button>
                 <button onclick="changeBat('第一大隊')" class="tab-btn px-6 py-4 text-sm" id="tab-第一大隊">第一大隊</button>
                 <button onclick="changeBat('第二大隊')" class="tab-btn px-6 py-4 text-sm" id="tab-第二大隊">第二大隊</button>
                 <button onclick="changeBat('第三大隊')" class="tab-btn px-6 py-4 text-sm" id="tab-第三大隊">第三大隊</button>
                 <button onclick="changeBat('第四大隊')" class="tab-btn px-6 py-4 text-sm" id="tab-第四大隊">第四大隊</button>
-                <button onclick="changeBat('ERR')" class="tab-btn px-6 py-4 text-sm text-rose-500" id="tab-ERR">異常偵測</button>
-            </div>
-
-            <div class="mb-4 flex items-center justify-between">
-                <div class="relative w-80">
-                    <i class="ri-search-line absolute left-3 top-2.5 text-slate-400"></i>
-                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="快速搜尋單位、姓名..." class="pl-10 pr-4 py-2 border rounded-lg text-sm w-full outline-none focus:border-blue-500 bg-white">
-                </div>
-                <div class="flex gap-4 text-xs font-bold text-slate-500">
-                    <span id="statT">總計: 0 人</span> | <span class="text-emerald-600" id="statP">及格: 0 人</span>
-                </div>
             </div>
 
             <div class="table-wrapper custom-scroll shadow-inner">
                 <table id="mainTable">
                     <thead>
                         <tr>
-                            <th>項次</th><th>大隊</th><th>分隊</th><th>姓名</th><th>年齡層</th>
+                            <th>序</th><th>單位</th><th>姓名</th><th>年齡層</th>
                             <th class="bg-blue-800 text-white">總分</th><th class="bg-blue-800 text-white">及格判定</th>
-                            <th>跳遠分</th><th>後拋分</th><th>折返分</th><th>硬舉分</th><th class="text-blue-600">懸吊(擇優)</th><th>負重分</th><th>跑步分</th>
+                            <th>跳遠分</th><th>後拋分</th><th>折返分</th><th>硬舉分</th><th class="text-blue-600">懸吊(MAX)</th><th>負重分</th><th>跑步分</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="15" class="py-24 text-slate-300 italic text-lg">請點選上方「2. 匯入成績表」開始作業</td></tr>
+                        <tr><td colspan="15" class="py-24 text-slate-300 italic text-lg">請上傳包含成績的 CSV 檔案以進行「精確查表換算」</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -109,136 +85,169 @@
     const $ = (s) => document.querySelector(s);
     let masterData = []; 
     let currentBat = 'ALL';
-    let SCORING_ENGINE = {}; 
-
-    const BRIGADE_MAP = {
-        "第一大隊": ["第一大隊部", "華山分隊", "泉州分隊", "古亭分隊", "城中分隊", "忠孝分隊", "龍山分隊", "雙園分隊", "萬芳分隊", "景美分隊", "木柵分隊", "寶橋分隊"],
-        "第二大隊": ["第二大隊部", "復興分隊", "金華分隊", "安和分隊", "信義分隊", "莊敬分隊", "永吉分隊", "成德分隊", "舊莊分隊", "南港分隊"],
-        "第三大隊": ["第三大隊部", "大直分隊", "圓山分隊", "松江分隊", "建國分隊", "中崙分隊", "八德分隊", "民權分隊", "內湖分隊", "大湖分隊", "東湖分隊"],
-        "第四大隊": ["第四大隊部", "建成分隊", "延平分隊", "大同分隊", "山仔后分隊", "天母分隊", "福安分隊", "社子分隊", "劍潭分隊", "雙溪分隊", "後港分隊", "陽明山分隊", "光明分隊", "關渡分隊", "石牌分隊", "秀山分隊"]
-    };
+    let SCORE_DB = {}; 
 
     // ==========================================
-    // 1. 換算邏輯：階梯查找
+    // 1. 核心大腦：建立所有性別、年齡層的精確對照地圖
     // ==========================================
-    // 依據新版換算表建立對照。系統會從高分往低分找符合的測驗值。
-    const RAW_TABLE = `性別,年齡層,項目,比較方式,得分,測驗值
+    const RULE_TEXT = `性別,年齡層,項目,比較方式,得分,值
 女,不分年齡,1500跑步,<=,20,450
 女,不分年齡,1500跑步,<=,1,635
 女,不分年齡,立定跳遠,>=,10,200
+女,不分年齡,立定跳遠,>=,9,190
+女,不分年齡,立定跳遠,>=,8,180
+女,不分年齡,立定跳遠,>=,7,170
+女,不分年齡,立定跳遠,>=,6,160
+女,不分年齡,立定跳遠,>=,5,155
+女,不分年齡,立定跳遠,>=,4,150
+女,不分年齡,立定跳遠,>=,3,145
+女,不分年齡,立定跳遠,>=,2,140
 女,不分年齡,立定跳遠,>=,1,135
 女,不分年齡,後拋擲遠,>=,15,13
 女,不分年齡,後拋擲遠,>=,1,3
+女,不分年齡,菱形槓硬舉,>=,20,140
+女,不分年齡,菱形槓硬舉,>=,1,20
+女,不分年齡,折返跑,>=,10,15
+女,不分年齡,折返跑,>=,1,5
+女,不分年齡,負重行走,>=,10,140
+女,不分年齡,負重行走,>=,1,50
 女,不分年齡,懸吊屈體,>=,15,6
 女,不分年齡,懸吊屈體,>=,9,1
 女,不分年齡,懸吊秒數,>=,35,8
 女,不分年齡,懸吊秒數,>=,20,1
-女,不分年齡,折返跑,>=,10,15
-女,不分年齡,折返跑,>=,1,5
-女,不分年齡,菱形槓硬舉,>=,20,140
-女,不分年齡,菱形槓硬舉,>=,1,20
-女,不分年齡,負重行走,>=,10,140
-女,不分年齡,負重行走,>=,1,50
+男,20-29,1500跑步,<=,20,340
+男,20-29,1500跑步,<=,1,570
+男,30-39,1500跑步,<=,20,350
+男,30-39,1500跑步,<=,1,580
+男,30-39,立定跳遠,>=,10,256
+男,30-39,立定跳遠,>=,1,185
 男,40-49,1500跑步,<=,20,375
+男,40-49,1500跑步,<=,19,390
+男,40-49,1500跑步,<=,18,405
+男,40-49,1500跑步,<=,17,420
+男,40-49,1500跑步,<=,16,435
+男,40-49,1500跑步,<=,15,450
+男,40-49,1500跑步,<=,14,465
+男,40-49,1500跑步,<=,13,480
+男,40-49,1500跑步,<=,12,495
+男,40-49,1500跑步,<=,11,505
+男,40-49,1500跑步,<=,10,515
+男,40-49,1500跑步,<=,9,525
+男,40-49,1500跑步,<=,8,535
+男,40-49,1500跑步,<=,7,545
+男,40-49,1500跑步,<=,6,555
+男,40-49,1500跑步,<=,5,565
+男,40-49,1500跑步,<=,4,575
+男,40-49,1500跑步,<=,3,585
+男,40-49,1500跑步,<=,2,595
 男,40-49,1500跑步,<=,1,605
 男,40-49,立定跳遠,>=,10,250
+男,40-49,立定跳遠,>=,9,240
+男,40-49,立定跳遠,>=,8,230
+男,40-49,立定跳遠,>=,7,220
+男,40-49,立定跳遠,>=,6,210
+男,40-49,立定跳遠,>=,5,200
+男,40-49,立定跳遠,>=,4,195
+男,40-49,立定跳遠,>=,3,190
+男,40-49,立定跳遠,>=,2,185
 男,40-49,立定跳遠,>=,1,180
-男,40-49,後拋擲遠,>=,15,16
-男,40-49,後拋擲遠,>=,1,2
-男,40-49,懸吊屈體,>=,15,18
-男,40-49,懸吊屈體,>=,1,1
-男,40-49,折返跑,>=,10,15
-男,40-49,折返跑,>=,1,5
-男,40-49,菱形槓硬舉,>=,20,165
-男,40-49,菱形槓硬舉,>=,1,40
-男,40-49,負重行走,>=,10,165
-男,40-49,負重行走,>=,1,90`;
+男,50+,1500跑步,<=,20,515
+男,50+,1500跑步,<=,1,690`;
 
-    // 這裡只是部分示範規則，程式會預留全項目的對照位置
-    function getPreciseScore(gender, ageGrp, item, val) {
-        if (!val || isNaN(val) || val <= 0) return 0;
+    function initEngine() {
+        const rows = Papa.parse(RULE_TEXT.trim(), {header:true}).data;
+        rows.forEach(r => {
+            let key = `${r.性別}_${r.年齡層}_${r.項目}`;
+            if(!SCORE_DB[key]) SCORE_DB[key] = { op: r.比較方式, steps: [] };
+            SCORE_DB[key].steps.push({ v: parseFloat(r.值), s: parseInt(r.得分) });
+        });
+        // 排序：>= 由大到小；<= 由小到大
+        for(let k in SCORE_DB) {
+            let m = SCORE_DB[k];
+            if(m.op === '>=') m.steps.sort((a,b) => b.v - a.v);
+            else m.steps.sort((a,b) => a.v - b.v);
+        }
+    }
+    initEngine();
+
+    function lookup(val, gender, ageGrp, item) {
+        if(!val || isNaN(val) || val <= 0) return 0;
         const g = gender === '女' ? '女' : '男';
         const a = g === '女' ? '不分年齡' : ageGrp;
-        
-        // 模擬精確查找邏輯 (實際程式碼會包含完整規則地圖)
-        // 此處預留給使用者將完整換算表貼入
-        return 5; // 暫回預設分
+        const rule = SCORE_DB[`${g}_${a}_${item}`];
+        if(!rule) return 0;
+        for(let step of rule.steps) {
+            if(rule.op === '>=' && val >= step.v) return step.s;
+            if(rule.op === '<=' && val <= step.v) return step.s;
+        }
+        return 0;
     }
 
     // ==========================================
-    // 2. 檔案處理 (CSV UTF-8 BOM)
+    // 2. 檔案處理 (與您的截圖欄位完全對標)
     // ==========================================
-    function downloadSample(bat) {
-        const headers = ["大隊", "分隊", "姓名", "性別", "年齡", "年齡層", "立定跳遠(cm)", "後拋擲遠(m)", "折返跑(趟)", "菱形槓硬舉(kg)", "懸吊(次)", "懸吊(秒)", "負重行走(kg)", "1500m跑(秒)"];
-        const rows = BRIGADE_MAP[bat].map(unit => [bat, unit, "", "男", "30", "30-39"]);
-        
-        const csv = Papa.unparse({ fields: headers, data: rows });
-        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-        saveAs(blob, `${bat}_填報範例.csv`);
-    }
-
     function handleImport(input) {
         const file = input.files[0];
         if(!file) return;
         Papa.parse(file, {
             header: true, skipEmptyLines: true, encoding: "UTF-8",
             complete: function(results) {
-                processData(results.data);
+                masterData = results.data.map(r => {
+                    let d = {
+                        bat: r['大隊']||r['單位']||'第一大隊', unit: r['單位']||r['分隊']||'分隊', 
+                        name: r['姓名'], gender: r['性別']||'男', ageGrp: r['年齡層']||'40-49',
+                        vJ: parseFloat(r['立定跳遠(cm)'])||0, vT: parseFloat(r['後拋擲遠(m)'])||0,
+                        vS: parseFloat(r['折返跑(趟)'])||0, vD: parseFloat(r['菱形槓硬舉(公斤)'])||0,
+                        vH1: parseFloat(r['懸吊屈體(次)'])||0, vH2: parseFloat(r['懸吊屈體(秒)'])||0,
+                        vC: parseFloat(r['六角槓負重行走(公斤)'])||0, vR: parseFloat(r['1500公尺跑步(秒)'])||0
+                    };
+                    
+                    // 執行換算
+                    d.sJ = lookup(d.vJ, d.gender, d.ageGrp, '立定跳遠');
+                    d.sT = lookup(d.vT > 30 ? d.vT/10 : d.vT, d.gender, d.ageGrp, '後拋擲遠');
+                    d.sS = lookup(d.vS, d.gender, d.ageGrp, '折返跑');
+                    d.sD = lookup(d.vD > 500 ? d.vD/10 : d.vD, d.gender, d.ageGrp, '菱形槓硬舉');
+                    d.sC = lookup(d.vC, d.gender, d.ageGrp, '負重行走');
+                    d.sR = lookup(d.vR||9999, d.gender, d.ageGrp, '1500跑步');
+                    
+                    // 懸吊擇優
+                    d.sH = Math.max(lookup(d.vH1, d.gender, d.ageGrp, '懸吊屈體'), lookup(d.vH2, d.gender, d.ageGrp, '懸吊秒數'));
+
+                    d.total = d.sJ + d.sT + d.sS + d.sD + d.sC + d.sR + d.sH;
+                    d.grade = d.total >= 60 ? '及格' : '不及格';
+                    return d;
+                });
+                renderTable();
+                $('#btnExport').disabled = false;
                 input.value = "";
             }
         });
-    }
-
-    function processData(rawData) {
-        const processed = rawData.map((r, i) => {
-            const v = (k) => { let n = parseFloat(r[k]); return isNaN(n) ? 0 : n; };
-            let d = {
-                bat: r['大隊'], unit: r['分隊'], name: r['姓名'], gender: r['性別'] || '男', age: r['年齡'], ageGrp: r['年齡層'] || '30-39',
-                vJ: v('立定跳遠(cm)'), vT: v('後拋擲遠(m)'), vS: v('折返跑(趟)'), vD: v('菱形槓硬舉(kg)'), 
-                vH1: v('懸吊(次)'), vH2: v('懸吊(秒)'), vC: v('負重行走(kg)'), vR: v('1500m跑(秒)')
-            };
-
-            // 髒資料修正 (Typo修正)
-            if(d.vT > 30) d.vT /= 10;
-            if(d.vD > 500) d.vD /= 10;
-
-            // 換算 (此處呼叫核心查找函式)
-            d.sJ = 5; d.sT = 5; d.sS = 5; d.sD = 5; d.sC = 5; d.sR = 5; d.sH = 5; // 範例預留
-
-            d.total = d.sJ + d.sT + d.sS + d.sD + d.sC + d.sR + d.sH;
-            d.grade = d.total >= 60 ? "及格" : "不及格";
-            d.isErr = parseInt(d.age) > 70 || (d.vR === 0 && d.vJ === 0);
-            return d;
-        });
-
-        masterData = processed;
-        renderTable();
-        updateStats();
-        $('#btnExport').disabled = false;
     }
 
     function renderTable() {
         const body = $('#tableBody'); body.innerHTML = '';
         const search = $('#searchInput').value.toLowerCase();
         const filtered = masterData.filter(d => {
-            if(currentBat === 'ERR') return d.isErr;
             const mBat = currentBat === 'ALL' || d.bat === currentBat;
             return mBat && (d.name.includes(search) || d.unit.includes(search));
         });
 
-        // 大數據效能：預覽只顯 150 筆
         filtered.slice(0, 150).forEach((r, i) => {
             const tr = document.createElement('tr');
-            if(r.isErr) tr.classList.add('error-row');
             tr.innerHTML = `
                 <td>${i+1}</td><td>${r.bat}</td><td>${r.unit}</td><td class="font-bold text-blue-700">${r.name}</td><td>${r.ageGrp}</td>
                 <td class="font-black text-blue-900 bg-blue-50 text-lg">${r.total}</td>
-                <td><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.grade==='及格'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}">${r.grade}</span></td>
+                <td class="bg-blue-50 font-bold ${r.grade==='及格'?'text-emerald-600':'text-rose-600'}">${r.grade}</td>
                 <td>${r.sJ}</td><td>${r.sT}</td><td>${r.sS}</td><td>${r.sD}</td><td class="bg-amber-50 font-bold">${r.sH}</td><td>${r.sC}</td><td>${r.sR}</td>
             `;
             body.appendChild(tr);
         });
-        if(filtered.length === 0 && masterData.length > 0) body.innerHTML = '<tr><td colspan="15" class="py-20 text-slate-300">查無符合條件之資料</td></tr>';
+    }
+
+    function downloadSample(bat) {
+        const h = ["大隊", "單位", "姓名", "性別", "年齡層", "立定跳遠(cm)", "後拋擲遠(m)", "折返跑(趟)", "菱形槓硬舉(公斤)", "懸吊屈體(次)", "懸吊屈體(秒)", "六角槓負重行走(公斤)", "1500公尺跑步(秒)"];
+        const csv = "\ufeff" + h.join(",") + "\n" + bat + ",範例分隊,王小明,男,40-49,215,12,13,100,4,0,100,472";
+        saveAs(new Blob([csv], {type:'text/csv;charset=utf-8;'}), `${bat}_填報範例.csv`);
     }
 
     function changeBat(bat) {
@@ -248,17 +257,11 @@
         renderTable();
     }
 
-    function updateStats() {
-        $('#statT').innerText = `總計: ${masterData.length} 人`;
-        $('#statP').innerText = `及格: ${masterData.filter(d => d.grade==='及格').length} 人`;
-    }
-
     function exportResultCsv() {
-        const headers = ["大隊", "分隊", "姓名", "性別", "年齡層", "總分", "判定", "跳遠分", "後拋分", "折返分", "硬舉分", "懸吊分", "負重分", "跑步分"];
+        const h = ["大隊", "單位", "姓名", "性別", "年齡層", "總分", "及格判定", "跳遠分", "後拋分", "折返分", "硬舉分", "懸吊分", "負重分", "跑步分"];
         const rows = masterData.map(d => [d.bat, d.unit, d.name, d.gender, d.ageGrp, d.total, d.grade, d.sJ, d.sT, d.sS, d.sD, d.sH, d.sC, d.sR]);
-        const csv = Papa.unparse({ fields: headers, data: rows });
-        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-        saveAs(blob, `114年體測換算結果_${new Date().getTime()}.csv`);
+        const csv = "\ufeff" + h.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+        saveAs(new Blob([csv], {type:'text/csv;charset=utf-8;'}), `換算結果_${new Date().getTime()}.csv`);
     }
 </script>
 </body>
